@@ -9,6 +9,73 @@
     --color-accent: #ff6b6b;
   }
   
+  .bg-primary {
+    background-color: #ff3a3a;
+  }
+  
+  .bg-secondary {
+    background-color: #212121;
+  }
+  
+  .bg-background {
+    background-color: #f8f8f8;
+  }
+  
+  .bg-accent {
+    background-color: #ff6b6b;
+  }
+  
+  /* Text color classes */
+  .text-primary {
+    color: #ff3a3a;
+  }
+  
+  .text-secondary {
+    color: #212121;
+  }
+  
+  .text-background {
+    color: #f8f8f8;
+  }
+  
+  .text-text {
+    color: #333333;
+  }
+  
+  .text-accent {
+    color: #ff6b6b;
+  }
+  
+  /* Border color classes */
+  .border-primary {
+    border-color: #ff3a3a;
+  }
+  
+  .border-secondary {
+    border-color: #212121;
+  }
+  
+  .border-accent {
+    border-color: #ff6b6b;
+  }
+  
+  /* Hover classes */
+  .hover\:bg-primary:hover {
+    background-color: #ff3a3a;
+  }
+  
+  .hover\:bg-accent:hover {
+    background-color: #ff6b6b;
+  }
+  
+  .hover\:text-primary:hover {
+    color: #ff3a3a;
+  }
+  
+  .hover\:text-accent:hover {
+    color: #ff6b6b;
+  }
+  
   body {
     background-color: var(--color-background);
     color: var(--color-text);

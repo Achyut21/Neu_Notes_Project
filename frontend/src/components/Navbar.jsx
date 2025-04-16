@@ -22,7 +22,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-secondary text-white shadow-md">
+    <nav className="bg-[#212121] text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -114,7 +114,7 @@ const Navbar = () => {
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
           <Link 
             to="/" 
-            className="text-white hover:text-accent block px-3 py-2 rounded-md text-base font-medium"
+            className="text-text hover:text-accent block px-3 py-2 rounded-md text-base font-medium"
             onClick={() => setIsMenuOpen(false)}
           >
             Home
@@ -124,7 +124,7 @@ const Navbar = () => {
             <>
               <Link 
                 to="/profile" 
-                className="text-white hover:text-accent block px-3 py-2 rounded-md text-base font-medium"
+                className="text-text hover:text-accent block px-3 py-2 rounded-md text-base font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Profile
