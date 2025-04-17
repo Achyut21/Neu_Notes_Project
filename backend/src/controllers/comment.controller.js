@@ -7,39 +7,29 @@ export const createComment = async (req, res, next) => {
     const { upload_id, content } = req.body;
     const userId = req.session.user.id;
     
-    if (!content) {
-      return res.status(400).json({ message: 'Comment content is required' });
-    }
-    
-    // Check if upload exists
-    const [uploads] = await pool.query('SELECT * FROM uploads WHERE id = ?', [upload_id]);
-    
-    if (uploads.length === 0) {
-      return res.status(404).json({ message: 'Upload not found' });
-    }
-    
-    // Create comment
-    const [result] = await pool.query(
-      'INSERT INTO comments (upload_id, user_id, content) VALUES (?, ?, ?)',
-      [upload_id, userId, content]
-    );
-    
-    // Log activity
+    // Use stored procedure to add comment
     await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Commented on an upload`]
+      'CALL add_comment(?, ?, ?, @comment_id)',
+      [userId, upload_id, content]
     );
+    
+    // Get output parameter
+    const [output] = await pool.query('SELECT @comment_id AS comment_id');
     
     // Get the created comment with user info
     const [comments] = await pool.query(
       'SELECT c.*, u.first_name, u.last_name FROM comments c ' +
       'JOIN users u ON c.user_id = u.id ' +
       'WHERE c.id = ?',
-      [result.insertId]
+      [output[0].comment_id]
     );
     
     res.status(201).json(comments[0]);
   } catch (error) {
+    // Handle specific errors from stored procedure
+    if (error.sqlState === '45000') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -70,7 +60,7 @@ export const updateComment = async (req, res, next) => {
     const { content } = req.body;
     const userId = req.session.user.id;
     
-    if (!content) {
+    if (!content || !content.trim()) {
       return res.status(400).json({ message: 'Comment content is required' });
     }
     
@@ -94,7 +84,7 @@ export const updateComment = async (req, res, next) => {
     // Update comment
     await pool.query(
       'UPDATE comments SET content = ? WHERE id = ?',
-      [content, id]
+      [content.trim(), id]
     );
     
     // Log activity
@@ -137,14 +127,8 @@ export const deleteComment = async (req, res, next) => {
       return res.status(403).json({ message: 'You do not have permission to delete this comment' });
     }
     
-    // Delete comment
+    // Delete comment - trigger will handle updating comment count
     await pool.query('DELETE FROM comments WHERE id = ?', [id]);
-    
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Deleted a comment`]
-    );
     
     res.status(200).json({ message: 'Comment deleted successfully' });
   } catch (error) {

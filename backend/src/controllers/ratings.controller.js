@@ -7,64 +7,31 @@ export const rateNote = async (req, res, next) => {
     const { upload_id, rating } = req.body;
     const userId = req.session.user.id;
     
-    // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-    }
-    
-    // Check if upload exists
-    const [uploads] = await pool.query('SELECT * FROM uploads WHERE id = ?', [upload_id]);
-    
-    if (uploads.length === 0) {
-      return res.status(404).json({ message: 'Upload not found' });
-    }
-    
-    // Check if user has already rated this note
-    const [existingRatings] = await pool.query(
-      'SELECT * FROM ratings WHERE user_id = ? AND upload_id = ?',
-      [userId, upload_id]
-    );
-    
-    if (existingRatings.length > 0) {
-      // Update existing rating
-      await pool.query(
-        'UPDATE ratings SET rating = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [rating, existingRatings[0].id]
-      );
-      
-      // Log activity
-      await pool.query(
-        'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-        [userId, `Updated rating for a note to ${rating} stars`]
-      );
-      
-      const [updatedRating] = await pool.query(
-        'SELECT * FROM ratings WHERE id = ?',
-        [existingRatings[0].id]
-      );
-      
-      return res.status(200).json(updatedRating[0]);
-    }
-    
-    // Create new rating
-    const [result] = await pool.query(
-      'INSERT INTO ratings (user_id, upload_id, rating) VALUES (?, ?, ?)',
+    // Use stored procedure to add or update rating
+    await pool.query(
+      'CALL add_or_update_rating(?, ?, ?, @rating_id, @is_new)',
       [userId, upload_id, rating]
     );
     
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Rated a note ${rating} stars`]
-    );
+    // Get output parameters
+    const [output] = await pool.query('SELECT @rating_id AS rating_id, @is_new AS is_new');
     
-    const [newRating] = await pool.query(
+    // Get rating details
+    const [ratings] = await pool.query(
       'SELECT * FROM ratings WHERE id = ?',
-      [result.insertId]
+      [output[0].rating_id]
     );
     
-    res.status(201).json(newRating[0]);
+    if (ratings.length === 0) {
+      return res.status(500).json({ message: 'Failed to retrieve rating' });
+    }
+    
+    res.status(output[0].is_new ? 201 : 200).json(ratings[0]);
   } catch (error) {
+    // Handle specific errors from the stored procedure
+    if (error.sqlState === '45000') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -92,14 +59,8 @@ export const deleteRating = async (req, res, next) => {
       return res.status(403).json({ message: 'You do not have permission to delete this rating' });
     }
     
-    // Delete rating
+    // Delete rating - trigger will handle updating average rating
     await pool.query('DELETE FROM ratings WHERE id = ?', [id]);
-    
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Deleted rating for a note`]
-    );
     
     res.status(200).json({ message: 'Rating deleted successfully' });
   } catch (error) {
@@ -132,16 +93,19 @@ export const getAverageRating = async (req, res, next) => {
   try {
     const { uploadId } = req.params;
     
-    const [result] = await pool.query(
-      'SELECT AVG(rating) AS average_rating, COUNT(*) AS rating_count ' +
-      'FROM ratings ' +
-      'WHERE upload_id = ?',
+    // Get from the uploads table directly since triggers maintain this data
+    const [uploads] = await pool.query(
+      'SELECT average_rating, rating_count FROM uploads WHERE id = ?',
       [uploadId]
     );
     
+    if (uploads.length === 0) {
+      return res.status(404).json({ message: 'Upload not found' });
+    }
+    
     res.status(200).json({
-      average_rating: result[0].average_rating || 0,
-      rating_count: result[0].rating_count
+      average_rating: uploads[0].average_rating || 0,
+      rating_count: uploads[0].rating_count || 0
     });
   } catch (error) {
     next(error);

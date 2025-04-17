@@ -27,13 +27,20 @@ const CreateCategoryModal = ({ isOpen, onClose, onSuccess }) => {
       setIsLoading(true);
       setError('');
       
+      // The backend will now use the stored procedure to create the category
       const response = await api.post('/category', formData);
       
+      // Reset form
       setFormData({ name: '', image: '' });
+      
+      // Notify parent component of success
       onSuccess(response.data);
+      
+      // Close modal
       onClose();
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to create category');
+      console.error('Error creating category:', error);
     } finally {
       setIsLoading(false);
     }

@@ -1,12 +1,5 @@
-// src/controllers/category.controller.js - Category controller
+// src/controllers/category.controller.js
 import pool from '../db.js';
-
-// Generate a random 6-character code (first 3 letters of name + 3 random digits)
-const generateCategoryCode = (name) => {
-  const prefix = name.substring(0, 3).toUpperCase();
-  const randomDigits = Math.floor(Math.random() * 900) + 100; // 3 random digits (100-999)
-  return `${prefix}${randomDigits}`;
-};
 
 // Create a new category
 export const createCategory = async (req, res, next) => {
@@ -14,25 +7,19 @@ export const createCategory = async (req, res, next) => {
     const { name, image } = req.body;
     const userId = req.session.user.id;
     
-    // Generate a unique code for the category
-    const code = generateCategoryCode(name);
-    
-    // Insert category into database
+    // Use stored procedure to create category
     const [result] = await pool.query(
-      'INSERT INTO categories (code, name, image, created_by) VALUES (?, ?, ?, ?)',
-      [code, name, image || null, userId]
+      'CALL create_category(?, ?, ?, @id, @code)',
+      [name, image || null, userId]
     );
     
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Created category: ${name}`]
-    );
+    // Get the output parameters
+    const [output] = await pool.query('SELECT @id AS id, @code AS code');
     
-    // Get the created category
+    // Get the created category with all details
     const [categories] = await pool.query(
       'SELECT * FROM categories WHERE id = ?',
-      [result.insertId]
+      [output[0].id]
     );
     
     res.status(201).json(categories[0]);
