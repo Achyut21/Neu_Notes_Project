@@ -1,7 +1,7 @@
 // src/routes/upload.routes.js - Upload routes
 import express from 'express';
 import multer from 'multer';
-import { uploadNote, getUploadsBySubcategoryId, getUserUploads, deleteUpload } from '../controllers/upload.controller.js';
+import { uploadNote, getUploadsBySubcategoryId, getUserUploads, deleteUpload, getUploadById } from '../controllers/upload.controller.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
 // Configure multer for memory storage
@@ -31,5 +31,6 @@ router.post('/', authMiddleware, upload.single('file'), uploadNote);
 router.get('/by-subcategory/:subcategoryId', getUploadsBySubcategoryId);
 router.get('/my-uploads', authMiddleware, getUserUploads);
 router.delete('/:id', authMiddleware, deleteUpload);
+router.get('/:id', getUploadById);
 
 export default router;

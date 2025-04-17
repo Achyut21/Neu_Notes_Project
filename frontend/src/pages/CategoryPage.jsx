@@ -5,7 +5,6 @@ import api from '../services/api';
 import useAuthStore from '../contexts/authStore';
 import CreateSubcategoryModal from '../components/CreateSubcategoryModal';
 import UploadNoteModal from '../components/UploadNoteModal';
-import CommentsSection from '../components/CommentsSection';
 
 const CategoryPage = () => {
   const { id } = useParams();
@@ -20,8 +19,7 @@ const CategoryPage = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollButtonDisabled, setEnrollButtonDisabled] = useState(false);
-  const [selectedUpload, setSelectedUpload] = useState(null);
-  const [showComments, setShowComments] = useState(false);
+  const [favorites, setFavorites] = useState({});
 
   // Check if user can create subcategories
   const canCreateSubcategory = user && (
@@ -38,7 +36,24 @@ const CategoryPage = () => {
 
   useEffect(() => {
     fetchCategoryData();
-  }, [id]);
+    if (user) {
+      fetchFavorites();
+    }
+  }, [id, user]);
+
+  const fetchFavorites = async () => {
+    try {
+      // Create a simple endpoint that returns user's favorite upload IDs
+      const response = await api.get('/favorites/my-favorite-ids');
+      const favoriteIds = {};
+      response.data.forEach(item => {
+        favoriteIds[item.upload_id] = item.id;
+      });
+      setFavorites(favoriteIds);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
 
   const fetchCategoryData = async () => {
     try {
@@ -153,12 +168,6 @@ const CategoryPage = () => {
           ...prev,
           [subcategoryId]: prev[subcategoryId].filter(u => u.id !== uploadId)
         }));
-        
-        // Close comments if the deleted upload was selected
-        if (selectedUpload && selectedUpload.id === uploadId) {
-          setSelectedUpload(null);
-          setShowComments(false);
-        }
       } catch (error) {
         console.error('Error deleting upload:', error);
         alert('Failed to delete upload');
@@ -166,15 +175,35 @@ const CategoryPage = () => {
     }
   };
 
-  const handleViewComments = (upload) => {
-    setSelectedUpload(upload);
-    setShowComments(true);
+  const handleToggleFavorite = async (uploadId, subcategoryId) => {
+    if (!user) return;
+    
+    try {
+      // Update UI optimistically
+      const newFavorites = { ...favorites };
+      
+      if (newFavorites[uploadId]) {
+        // Remove from favorites
+        await api.delete(`/favorites/${newFavorites[uploadId]}`);
+        delete newFavorites[uploadId];
+      } else {
+        // Add to favorites
+        const response = await api.post('/favorites', { upload_id: uploadId });
+        newFavorites[uploadId] = response.data.id;
+      }
+      
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert UI changes on error by refetching
+      fetchFavorites();
+    }
   };
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3a3a]"></div>
       </div>
     );
   }
@@ -185,7 +214,7 @@ const CategoryPage = () => {
         <div className="bg-red-100 text-red-700 p-4 rounded-md">
           {error || 'Category not found'}
         </div>
-        <Link to="/" className="mt-4 inline-block text-primary hover:text-accent">
+        <Link to="/" className="mt-4 inline-block text-[#ff3a3a] hover:text-[#ff6b6b]">
           &larr; Back to Home
         </Link>
       </div>
@@ -193,9 +222,9 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f8f8f8]">
       {/* Category Header */}
-      <div className="bg-secondary text-white py-8">
+      <div className="bg-[#212121] text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
@@ -210,7 +239,7 @@ const CategoryPage = () => {
               <button
                 onClick={handleEnroll}
                 disabled={enrollButtonDisabled}
-                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-accent transition-colors disabled:opacity-50 mt-4 md:mt-0"
+                className="bg-[#ff3a3a] text-white px-4 py-2 rounded-md hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 mt-4 md:mt-0"
               >
                 {enrollButtonDisabled ? 'Enrolling...' : 'Enroll in this Course'}
               </button>
@@ -236,12 +265,12 @@ const CategoryPage = () => {
       {/* Subcategories Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-secondary">Subcategories</h2>
+          <h2 className="text-2xl font-bold text-[#212121]">Subcategories</h2>
           
           {canCreateSubcategory && (
             <button
               onClick={() => setShowSubcatModal(true)}
-              className="bg-primary text-white px-4 py-2 rounded-md hover:bg-accent transition-colors"
+              className="bg-[#ff3a3a] text-white px-4 py-2 rounded-md hover:bg-[#ff6b6b] transition-colors"
             >
               Add Subcategory
             </button>
@@ -254,7 +283,7 @@ const CategoryPage = () => {
             {canCreateSubcategory && (
               <button
                 onClick={() => setShowSubcatModal(true)}
-                className="mt-4 bg-primary text-white px-4 py-2 rounded-md hover:bg-accent transition-colors"
+                className="mt-4 bg-[#ff3a3a] text-white px-4 py-2 rounded-md hover:bg-[#ff6b6b] transition-colors"
               >
                 Create Your First Subcategory
               </button>
@@ -266,10 +295,10 @@ const CategoryPage = () => {
               <div key={subcategory.id} className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-secondary">{subcategory.name}</h3>
+                    <h3 className="text-xl font-semibold text-[#212121]">{subcategory.name}</h3>
                     <p className="text-xs text-gray-500">
                       Created by: {subcategory.first_name} {subcategory.last_name}
-                      {user && subcategory.created_by === user.id && <span className="ml-1 text-primary">(You)</span>}
+                      {user && subcategory.created_by === user.id && <span className="ml-1 text-[#ff3a3a]">(You)</span>}
                     </p>
                   </div>
                   
@@ -277,7 +306,7 @@ const CategoryPage = () => {
                     {canUpload && (
                       <button
                         onClick={() => handleUploadNote(subcategory.id)}
-                        className="bg-primary text-white px-3 py-1 rounded hover:bg-accent transition-colors text-sm"
+                        className="bg-[#ff3a3a] text-white px-3 py-1 rounded hover:bg-[#ff6b6b] transition-colors text-sm"
                       >
                         Upload Note
                       </button>
@@ -304,15 +333,15 @@ const CategoryPage = () => {
                   {!uploads[subcategory.id] || uploads[subcategory.id].length === 0 ? (
                     <p className="text-gray-500 text-sm italic">No notes uploaded yet</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {uploads[subcategory.id].map((upload) => (
                         <div key={upload.id} className="border rounded-md p-3 bg-gray-50">
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="font-medium truncate">{upload.file_name}</p>
                               <p className="text-xs text-gray-500">
-                                By: {upload.first_name} {upload.last_name} 
-                                {user && upload.uploaded_by === user.id && <span className="ml-1 text-primary">(You)</span>}
+                                By: {upload.first_name || upload.uploaded_by} {upload.last_name || ''}
+                                {user && upload.uploaded_by === user.id && <span className="ml-1 text-[#ff3a3a]">(You)</span>}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Uploaded: {new Date(upload.uploaded_at).toLocaleDateString()}
@@ -323,20 +352,59 @@ const CategoryPage = () => {
                             </div>
                             
                             <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleViewComments(upload)}
+                              {/* View button */}
+                              <Link
+                                to={`/category/${id}/note/${upload.id}`}
+                                className="text-[#ff3a3a] hover:text-[#ff6b6b]"
+                                aria-label="View details"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                              </Link>
+                              
+                              {/* Comment button */}
+                              <Link
+                                to={`/category/${id}/note/${upload.id}#comments`}
                                 className="text-blue-500 hover:text-blue-700"
-                                aria-label="View comments"
+                                aria-label="Comments"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                                 </svg>
-                              </button>
+                                {upload.comment_count > 0 && (
+                                  <span className="absolute -mt-2 -mr-2 bg-blue-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                                    {upload.comment_count}
+                                  </span>
+                                )}
+                              </Link>
                               
+                              {/* Favorite button */}
+                              {user && (
+                                <button
+                                  onClick={() => handleToggleFavorite(upload.id, subcategory.id)}
+                                  className={favorites[upload.id] ? "text-yellow-500" : "text-gray-400 hover:text-yellow-500"}
+                                  aria-label={favorites[upload.id] ? "Remove from favorites" : "Add to favorites"}
+                                >
+                                  {favorites[upload.id] ? (
+                                    // Filled heart
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                  ) : (
+                                    // Outline heart
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                  )}
+                                </button>
+                              )}
+                              
+                              {/* Download button */}
                               <a
                                 href={upload.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                download={upload.file_name}
                                 className="text-green-500 hover:text-green-700"
                                 aria-label="Download file"
                               >
@@ -345,6 +413,7 @@ const CategoryPage = () => {
                                 </svg>
                               </a>
                               
+                              {/* Delete button (if user has permission) */}
                               {user && (user.id === upload.uploaded_by || user.role === 'ADMIN') && (
                                 <button
                                   onClick={() => handleDeleteUpload(upload.id, subcategory.id)}
@@ -358,6 +427,17 @@ const CategoryPage = () => {
                               )}
                             </div>
                           </div>
+                          
+                          {/* Tags section */}
+                          {upload.tags && upload.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {upload.tags.map(tag => (
+                                <span key={tag.id} className="text-xs bg-gray-200 px-1 py-0.5 rounded">
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -369,7 +449,7 @@ const CategoryPage = () => {
         )}
         
         <div className="mt-8">
-          <Link to="/" className="text-primary hover:text-accent">
+          <Link to="/" className="text-[#ff3a3a] hover:text-[#ff6b6b]">
             &larr; Back to Home
           </Link>
         </div>
@@ -390,16 +470,6 @@ const CategoryPage = () => {
           onClose={() => setShowUploadModal(false)}
           subcategoryId={selectedSubcategory}
           onSuccess={handleUploadSuccess}
-        />
-      )}
-
-      {/* Comments Section */}
-      {selectedUpload && (
-        <CommentsSection
-          isOpen={showComments}
-          onClose={() => setShowComments(false)}
-          uploadId={selectedUpload.id}
-          fileName={selectedUpload.file_name}
         />
       )}
     </div>

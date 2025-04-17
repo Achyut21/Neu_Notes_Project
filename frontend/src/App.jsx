@@ -10,6 +10,8 @@ import Signup from './pages/Signup';
 import CategoryPage from './pages/CategoryPage';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import FavoritesPage from './pages/FavoritesPage';
+import NoteDetails from './components/NoteDetails';
 
 // Protected route component for any authenticated user
 const ProtectedRoute = ({ children }) => {
@@ -17,8 +19,8 @@ const ProtectedRoute = ({ children }) => {
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center h-screen bg-[#f8f8f8]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3a3a]"></div>
       </div>
     );
   }
@@ -36,8 +38,8 @@ const AdminRoute = ({ children }) => {
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center h-screen bg-[#f8f8f8]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3a3a]"></div>
       </div>
     );
   }
@@ -59,15 +61,15 @@ const App = () => {
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center h-screen bg-[#f8f8f8]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3a3a]"></div>
       </div>
     );
   }
   
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-[#f8f8f8]">
         <Navbar />
         <main className="flex-grow">
           <Routes>
@@ -85,6 +87,16 @@ const App = () => {
                 <AdminDashboard />
               </AdminRoute>
             } />
+            
+            {/* New routes for the additional features */}
+            <Route path="/favorites" element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/category/:categoryId/note/:uploadId" element={<NoteDetails />} />
+            
             <Route path="*" element={<Navigate to="/" />} /> {/* Catch all route */}
           </Routes>
         </main>

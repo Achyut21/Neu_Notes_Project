@@ -8,6 +8,9 @@ import enrollmentRoutes from './enrollment.routes.js';
 import activityRoutes from './activity.routes.js';
 import userRoutes from './user.routes.js';
 import commentRoutes from './comment.routes.js';
+import favoritesRoutes from './favorites.routes.js';
+import tagsRoutes from './tags.routes.js';
+import ratingsRoutes from './ratings.routes.js';
 
 const router = express.Router();
 
@@ -30,6 +33,10 @@ router.use('/enrollment', enrollmentRoutes);
 router.use('/activity', activityRoutes);
 router.use('/user', userRoutes);
 router.use('/comment', commentRoutes);
+router.use('/favorites', favoritesRoutes);
+router.use('/tags', tagsRoutes);
+router.use('/ratings', ratingsRoutes);
+
 
 // Test endpoint that doesn't require authentication
 router.get('/test', (req, res) => {

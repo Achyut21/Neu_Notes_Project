@@ -173,3 +173,87 @@ export const deleteUpload = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get upload by ID
+export const getUploadById = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the upload with file metadata
+      const [uploads] = await pool.query(
+        'SELECT u.*, fm.file_name, fm.file_type, fm.file_size, fm.file_url, fm.description, ' +
+        'usr.first_name, usr.last_name ' +
+        'FROM uploads u ' +
+        'JOIN file_metadata fm ON u.id = fm.upload_id ' +
+        'JOIN users usr ON u.uploaded_by = usr.id ' +
+        'WHERE u.id = ?',
+        [id]
+      );
+      
+      if (uploads.length === 0) {
+        return res.status(404).json({ message: 'Upload not found' });
+      }
+      
+      const upload = uploads[0];
+      
+      // Get the subcategory and category information
+      const [subcategories] = await pool.query(
+        'SELECT s.name AS subcategory_name, c.id AS category_id, c.name AS category_name ' +
+        'FROM subcategories s ' +
+        'JOIN categories c ON s.category_id = c.id ' +
+        'WHERE s.id = ?',
+        [upload.subcategory_id]
+      );
+      
+      if (subcategories.length > 0) {
+        upload.subcategory_name = subcategories[0].subcategory_name;
+        upload.category_id = subcategories[0].category_id;
+        upload.category_name = subcategories[0].category_name;
+      }
+      
+      // Check if there are any comments
+      const [commentCount] = await pool.query(
+        'SELECT COUNT(*) AS count FROM comments WHERE upload_id = ?',
+        [id]
+      );
+      
+      upload.comment_count = commentCount[0].count;
+      
+      // Try to get tags if they exist
+      try {
+        const [tags] = await pool.query(
+          'SELECT t.id, t.name ' +
+          'FROM tags t ' +
+          'JOIN note_tags nt ON t.id = nt.tag_id ' +
+          'WHERE nt.upload_id = ?',
+          [id]
+        );
+        
+        upload.tags = tags;
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        upload.tags = [];
+      }
+      
+      // Try to get average rating if it exists
+      try {
+        const [ratingResult] = await pool.query(
+          'SELECT AVG(rating) AS average_rating, COUNT(*) AS rating_count ' +
+          'FROM ratings ' +
+          'WHERE upload_id = ?',
+          [id]
+        );
+        
+        upload.average_rating = ratingResult[0].average_rating || 0;
+        upload.rating_count = ratingResult[0].rating_count;
+      } catch (error) {
+        console.error('Error fetching ratings:', error);
+        upload.average_rating = 0;
+        upload.rating_count = 0;
+      }
+      
+      res.status(200).json(upload);
+    } catch (error) {
+      next(error);
+    }
+  };
