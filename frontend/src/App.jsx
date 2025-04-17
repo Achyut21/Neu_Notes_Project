@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import FavoritesPage from './pages/FavoritesPage';
 import NoteDetails from './components/NoteDetails';
 
+
 // Protected route component for any authenticated user
 const ProtectedRoute = ({ children }) => {
   const { user, isLoading } = useAuthStore();

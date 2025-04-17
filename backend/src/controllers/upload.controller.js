@@ -257,3 +257,48 @@ export const getUploadById = async (req, res, next) => {
       next(error);
     }
   };
+
+  // In your upload.controller.js or a dedicated noteDetails.controller.js
+export const getNoteDetails = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      const [notes] = await pool.query(
+        `SELECT u.id, u.uploaded_by, u.subcategory_id, u.uploaded_at, u.comment_count, 
+                u.average_rating, u.rating_count, 
+                fm.file_name, fm.file_type, fm.file_size, fm.file_url, fm.description, 
+                usr.first_name, usr.last_name, 
+                s.name AS subcategory_name, c.id AS category_id, c.name AS category_name
+         FROM uploads u
+         JOIN file_metadata fm ON u.id = fm.upload_id
+         JOIN users usr ON u.uploaded_by = usr.id
+         JOIN subcategories s ON u.subcategory_id = s.id
+         JOIN categories c ON s.category_id = c.id
+         WHERE u.id = ?`,
+        [id]
+      );
+      
+      if (notes.length === 0) {
+        return res.status(404).json({ message: 'Note not found' });
+      }
+      
+      const note = notes[0];
+      
+      // Add any additional related data
+      // Get tags if they exist
+      const [tags] = await pool.query(
+        `SELECT t.id, t.name, nt.id AS note_tag_id
+         FROM tags t
+         JOIN note_tags nt ON t.id = nt.tag_id
+         WHERE nt.upload_id = ?`,
+        [id]
+      );
+      
+      // Attach tags to the note
+      note.tags = tags;
+      
+      res.status(200).json(note);
+    } catch (error) {
+      next(error);
+    }
+  };

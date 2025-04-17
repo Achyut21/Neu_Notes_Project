@@ -277,33 +277,102 @@ const NoteDetails = () => {
             </div>
           )}
           
-          {/* File Preview Section */}
+          {/* Note Statistics Section (replacing the preview) */}
           <div className="mb-6 p-3 bg-gray-50 rounded-md">
-            <h3 className="text-md font-medium text-secondary mb-2">Preview</h3>
-            {note.file_type && note.file_type.includes('pdf') ? (
-              <iframe
-                src={note.file_url}
-                className="w-full h-96 border"
-                title="PDF Preview"
-              ></iframe>
-            ) : note.file_type && note.file_type.includes('image') ? (
-              <img
-                src={note.file_url}
-                alt={note.file_name}
-                className="max-w-full h-auto mx-auto rounded-md"
-              />
-            ) : (
-              <div className="p-4 bg-gray-100 rounded text-center">
-                <p>Preview not available for this file type.</p>
-                <a 
-                  href={note.file_url} 
-                  download
-                  className="mt-2 inline-block px-4 py-2 bg-primary text-white rounded-md hover:bg-accent"
-                >
-                  Download to view
-                </a>
+            <h3 className="text-md font-medium text-secondary mb-4">Note Analytics</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Key Metrics */}
+              <div className="bg-white p-4 rounded-md shadow-sm">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Activity Summary</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary">
+                      {note.rating_count || 0}
+                    </div>
+                    <div className="text-xs text-gray-500">Ratings</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-accent">
+                      {comments.length}
+                    </div>
+                    <div className="text-xs text-gray-500">Comments</div>
+                  </div>
+                </div>
               </div>
-            )}
+              
+              {/* Rating Distribution */}
+              <div className="bg-white p-4 rounded-md shadow-sm">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Rating Snapshot</h4>
+                <div className="flex items-center justify-center">
+                  <div className="text-center">
+                    {note.average_rating ? (
+                      <>
+                        <div className="text-4xl font-bold text-yellow-500">
+                          {Number(note.average_rating).toFixed(1)}
+                        </div>
+                        <div className="flex items-center justify-center mt-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span key={star} className="text-lg">
+                              <span className={star <= Math.round(note.average_rating) ? 'text-yellow-500' : 'text-gray-300'}>
+                                ★
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {note.rating_count} {note.rating_count === 1 ? 'rating' : 'ratings'}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-gray-500 text-sm">No ratings yet</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent Activity Timeline */}
+              <div className="bg-white p-4 rounded-md shadow-sm col-span-1 sm:col-span-2">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Activity</h4>
+                <div className="space-y-3">
+                  {comments.length > 0 ? (
+                    comments.slice(0, 3).map((comment) => (
+                      <div key={comment.id} className="flex items-start">
+                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                          {comment.first_name.charAt(0)}
+                        </div>
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">
+                            {comment.first_name} {comment.last_name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </div>
+                          <div className="text-sm text-gray-700 mt-1">
+                            {comment.content.length > 100 ? 
+                              `${comment.content.substring(0, 100)}...` : 
+                              comment.content
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-4">
+                      No recent activity
+                    </div>
+                  )}
+                  
+                  {comments.length > 3 && (
+                    <div className="text-center text-sm mt-2">
+                      <a href="#comments" className="text-primary hover:text-accent">
+                        View all {comments.length} comments
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Rating Section */}
