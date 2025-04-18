@@ -394,6 +394,64 @@ frontend/
 - Delete tags
 - Unfavorite notes
 
+## Technical Implementation Details
+
+### Authentication
+The application uses session-based authentication with cookies, managed through express-session on the backend and a custom auth store (using Zustand) on the frontend.
+
+### File Storage
+Files are stored on the server filesystem with metadata stored in the database. The application supports PDFs and images with built-in preview capabilities.
+
+### Database Queries
+The application uses raw SQL queries (no ORM) to interact with the MySQL database, demonstrating direct SQL usage and optimization.
+
+### Error Handling
+Comprehensive error handling is implemented throughout the application using try-catch blocks and a global error handler middleware.
+
+### Security Considerations
+- CORS protection
+- Session cookies with proper security attributes
+- Input validation
+- Role-based access control
+- Proper error messaging to prevent information leakage
+
+## Future Improvements
+
+Possible enhancements for the NeuNotes platform:
+
+1. **Advanced Search**: Implement full-text search for note content
+2. **Collaborative Editing**: Real-time collaborative note editing
+3. **Version Control**: Track changes to notes over time
+4. **Notifications**: Alert users to new notes, comments, etc.
+5. **Mobile App**: Develop a mobile application for on-the-go access
+6. **Analytics Dashboard**: Provide usage statistics and insights
+7. **Content Recommendations**: Suggest notes based on user behavior and interests
+8. **Integration with LMS**: Connect with learning management systems
+
+## Troubleshooting
+
+### Common Issues
+
+#### Backend Can't Connect to MySQL
+- Verify MySQL is running
+- Check database credentials in .env file
+- Ensure the database exists and is accessible
+- Make sure atabase: process.env.DB_NAME || 'yourDBname' is changed in backend/src/db.js
+
+#### CORS Errors
+- Check that frontend URL matches CORS settings in backend
+- Verify that credentials: true is set in CORS configuration
+
+#### File Upload Issues
+- Check uploads directory permissions
+- Verify file size limits in Multer configuration
+
+#### Session Issues
+- Clear browser cookies
+- Check session configuration in app.js
+- Verify SESSION_SECRET is set properly
+
+
 ## Database Programming Features
 
 NeuNotes extensively uses database programming objects to ensure data integrity and consistency:
