@@ -45,58 +45,57 @@ export const signup = async (req, res, next) => {
 
 // User login
 export const login = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    
-    // Find user by email
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    
-    if (users.length === 0) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-    
-    const user = users[0];
-    
-    // Check password (plain text comparison for this project)
-    // In a real application, you would compare with bcrypt
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    const isPasswordValid = password === user.password;
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-    
-    // Create session
-    req.session.user = {
-      id: user.id,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      email: user.email,
-      role: user.role,
-      status: user.status
-    };
-    
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [user.id, 'User logged in']
-    );
-    
-    res.status(200).json({
-      message: 'Login successful',
-      user: {
+    try {
+      const { email, password } = req.body;
+      
+      // Find user by email
+      const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+      
+      // If user doesn't exist, return 401 with specific message
+      if (users.length === 0) {
+        return res.status(401).json({ message: 'Account not found. Please check your email or register if you\'re a new user.' });
+      }
+      
+      const user = users[0];
+      
+      // Check password
+      const isPasswordValid = password === user.password; // Note: In production, use bcrypt.compare
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid password. Please check your credentials.' });
+      }
+      
+      // Create session
+      req.session.user = {
         id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
         role: user.role,
         status: user.status
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+      };
+      
+      // Log activity
+      await pool.query(
+        'INSERT INTO activities (user_id, action) VALUES (?, ?)',
+        [user.id, 'User logged in']
+      );
+      
+      res.status(200).json({
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          role: user.role,
+          status: user.status
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
 // User logout
 export const logout = (req, res) => {

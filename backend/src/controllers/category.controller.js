@@ -67,51 +67,51 @@ export const getCategoryById = async (req, res, next) => {
 
 // Update category
 export const updateCategory = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { name, image } = req.body;
-    const userId = req.session.user.id;
-    
-    // Check if category exists and user has permission
-    const [categories] = await pool.query(
-      'SELECT * FROM categories WHERE id = ?',
-      [id]
-    );
-    
-    if (categories.length === 0) {
-      return res.status(404).json({ message: 'Category not found' });
+    try {
+      const { id } = req.params;
+      const { name, image } = req.body;
+      const userId = req.session.user.id;
+      
+      // Check if category exists and user has permission
+      const [categories] = await pool.query(
+        'SELECT * FROM categories WHERE id = ?',
+        [id]
+      );
+      
+      if (categories.length === 0) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+      
+      const category = categories[0];
+      
+      // Check if user has permission (admin or creator)
+      if (req.session.user.role !== 'ADMIN' && category.created_by !== userId) {
+        return res.status(403).json({ message: 'You do not have permission to update this category' });
+      }
+      
+      // Update category
+      await pool.query(
+        'UPDATE categories SET name = ?, image = ? WHERE id = ?',
+        [name, image, id]
+      );
+      
+      // Log activity
+      await pool.query(
+        'INSERT INTO activities (user_id, action) VALUES (?, ?)',
+        [userId, `Updated category: ${name}`]
+      );
+      
+      // Get updated category
+      const [updatedCategories] = await pool.query(
+        'SELECT * FROM categories WHERE id = ?',
+        [id]
+      );
+      
+      res.status(200).json(updatedCategories[0]);
+    } catch (error) {
+      next(error);
     }
-    
-    const category = categories[0];
-    
-    // Check if user has permission (admin or creator)
-    if (req.session.user.role !== 'ADMIN' && category.created_by !== userId) {
-      return res.status(403).json({ message: 'You do not have permission to update this category' });
-    }
-    
-    // Update category
-    await pool.query(
-      'UPDATE categories SET name = ?, image = ? WHERE id = ?',
-      [name, image, id]
-    );
-    
-    // Log activity
-    await pool.query(
-      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
-      [userId, `Updated category: ${name}`]
-    );
-    
-    // Get updated category
-    const [updatedCategories] = await pool.query(
-      'SELECT * FROM categories WHERE id = ?',
-      [id]
-    );
-    
-    res.status(200).json(updatedCategories[0]);
-  } catch (error) {
-    next(error);
-  }
-};
+  };
 
 // Delete category
 export const deleteCategory = async (req, res, next) => {

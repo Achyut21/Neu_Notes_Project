@@ -6,6 +6,7 @@ import useAuthStore from '../contexts/authStore';
 import SubjectCards from '../components/SubjectCards';
 import SearchBar from '../components/SearchBar';
 import CreateCategoryModal from '../components/CreateCategoryModal';
+import EditCategoryModal from '../components/EditCategoryModal';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -13,6 +14,8 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editCategoryModal, setEditCategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const { user } = useAuthStore();
 
   // Check if user can create categories
@@ -55,8 +58,22 @@ const Home = () => {
     setFilteredCategories(prev => [newCategory, ...prev]);
   };
 
+  const handleEditCategory = (category) => {
+    setSelectedCategory(category);
+    setEditCategoryModal(true);
+  };
+
+  const handleCategoryEditSuccess = (updatedCategory) => {
+    setCategories(prev => 
+      prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat)
+    );
+    setFilteredCategories(prev => 
+      prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat)
+    );
+  };
+
   const handleDeleteCategory = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
+    if (window.confirm('Are you sure you want to delete this category? All subcategories and notes within it will be deleted.')) {
       try {
         await api.delete(`/category/${id}`);
         setCategories(prev => prev.filter(category => category.id !== id));
@@ -164,6 +181,7 @@ const Home = () => {
           <SubjectCards
             categories={filteredCategories}
             onDelete={handleDeleteCategory}
+            onEdit={handleEditCategory}
             currentUser={user}
           />
         )}
@@ -175,6 +193,16 @@ const Home = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleCreateCategory}
       />
+
+      {/* Edit Category Modal */}
+      {editCategoryModal && selectedCategory && (
+        <EditCategoryModal
+          isOpen={editCategoryModal}
+          onClose={() => setEditCategoryModal(false)}
+          category={selectedCategory}
+          onSuccess={handleCategoryEditSuccess}
+        />
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import useAuthStore from '../contexts/authStore';
 import CreateSubcategoryModal from '../components/CreateSubcategoryModal';
+import EditSubcategoryModal from '../components/EditSubcategoryModal';
 import UploadNoteModal from '../components/UploadNoteModal';
 
 const CategoryPage = () => {
@@ -16,7 +17,9 @@ const CategoryPage = () => {
   const [error, setError] = useState('');
   const [showSubcatModal, setShowSubcatModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [editSubcategoryModal, setEditSubcategoryModal] = useState(false);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [selectedSubcategoryForEdit, setSelectedSubcategoryForEdit] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollButtonDisabled, setEnrollButtonDisabled] = useState(false);
   const [favorites, setFavorites] = useState({});
@@ -131,6 +134,17 @@ const CategoryPage = () => {
     }));
   };
 
+  const handleEditSubcategory = (subcategory) => {
+    setSelectedSubcategoryForEdit(subcategory);
+    setEditSubcategoryModal(true);
+  };
+
+  const handleSubcategoryEditSuccess = (updatedSubcategory) => {
+    setSubcategories(prev => 
+      prev.map(sub => sub.id === updatedSubcategory.id ? updatedSubcategory : sub)
+    );
+  };
+
   const handleDeleteSubcategory = async (subcategoryId) => {
     if (window.confirm('Are you sure you want to delete this subcategory? All notes within it will be deleted.')) {
       try {
@@ -198,6 +212,15 @@ const CategoryPage = () => {
       // Revert UI changes on error by refetching
       fetchFavorites();
     }
+  };
+
+  // Check if user can edit a subcategory
+  const canEditSubcategory = (subcategory) => {
+    return user && (
+      user.role === 'ADMIN' || 
+      subcategory.created_by === user.id ||
+      (category && category.created_by === user.id)
+    );
   };
 
   if (isLoading) {
@@ -309,6 +332,19 @@ const CategoryPage = () => {
                         className="bg-[#ff3a3a] text-white px-3 py-1 rounded hover:bg-[#ff6b6b] transition-colors text-sm"
                       >
                         Upload Note
+                      </button>
+                    )}
+                    
+                    {/* Edit button */}
+                    {canEditSubcategory(subcategory) && (
+                      <button
+                        onClick={() => handleEditSubcategory(subcategory)}
+                        className="text-blue-500 hover:text-blue-700"
+                        aria-label="Edit subcategory"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
                       </button>
                     )}
                     
@@ -463,6 +499,16 @@ const CategoryPage = () => {
         onSuccess={handleAddSubcategory}
       />
 
+      {/* Edit Subcategory Modal */}
+      {editSubcategoryModal && selectedSubcategoryForEdit && (
+        <EditSubcategoryModal
+          isOpen={editSubcategoryModal}
+          onClose={() => setEditSubcategoryModal(false)}
+          subcategory={selectedSubcategoryForEdit}
+          onSuccess={handleSubcategoryEditSuccess}
+        />
+      )}
+
       {/* Upload Note Modal */}
       {selectedSubcategory && (
         <UploadNoteModal
@@ -473,7 +519,6 @@ const CategoryPage = () => {
         />
       )}
     </div>
-  );
-};
+  );}
 
 export default CategoryPage;

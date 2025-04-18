@@ -37,7 +37,18 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', error);
+      
+      // Check for specific error status codes
+      if (error.response) {
+        if (error.response.status === 401) {
+          setError('Invalid email or password. If you don\'t have an account, please sign up.');
+        } else {
+          setError(error.response.data?.message || 'An error occurred during login. Please try again.');
+        }
+      } else {
+        setError('Unable to connect to the server. Please try again later.');
+      }
     }
   };
 

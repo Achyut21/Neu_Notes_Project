@@ -28,8 +28,11 @@ const useAuthStore = create((set) => ({
       set({ user: response.data.user, isLoading: false });
       return response.data.user;
     } catch (error) {
-      set({ isLoading: false, error: error.response?.data?.message || 'Login failed' });
-      throw error;
+      set({ 
+        isLoading: false, 
+        error: error.response?.data?.message || 'Login failed' 
+      });
+      throw error; // Re-throw error to be caught by the component
     }
   },
 
@@ -41,8 +44,11 @@ const useAuthStore = create((set) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
-      set({ isLoading: false, error: error.response?.data?.message || 'Signup failed' });
-      throw error;
+      set({ 
+        isLoading: false, 
+        error: error.response?.data?.message || 'Signup failed' 
+      });
+      throw error; // Re-throw error to be caught by the component
     }
   },
 
@@ -55,7 +61,7 @@ const useAuthStore = create((set) => ({
       return true;
     } catch (error) {
       set({ isLoading: false, error: error.message });
-      throw error;
+      throw error; // Re-throw error to be caught by the component
     }
   },
   
@@ -67,6 +73,11 @@ const useAuthStore = create((set) => ({
         ...profileData
       }
     }));
+  },
+  
+  // Clear errors
+  clearErrors: () => {
+    set({ error: null });
   }
 }));
 

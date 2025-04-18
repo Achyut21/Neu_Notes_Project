@@ -86,9 +86,19 @@ const Signup = () => {
       
       await signup(signupData);
       
+      // Clear form data
+      setFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        confirm_password: '',
+        status: 'Undergraduate',
+      });
+      
       // Redirect to login with success message
       navigate('/login', { 
-        state: { message: 'Account created successfully! Please sign in.' } 
+        state: { message: 'Account created successfully! Please sign in with your credentials.' } 
       });
     } catch (error) {
       setError(error.response?.data?.message || 'Signup failed. Please try again.');

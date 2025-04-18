@@ -1,4 +1,4 @@
-// src/controllers/subcategory.controller.js - Subcategory controller
+// src/controllers/subcategory.controller.js
 import pool from '../db.js';
 
 // Create a new subcategory
@@ -55,6 +55,61 @@ export const getSubcategoriesByCategoryId = async (req, res, next) => {
     );
     
     res.status(200).json(subcategories);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update subcategory
+export const updateSubcategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    const userId = req.session.user.id;
+    
+    // Check if subcategory exists
+    const [subcategories] = await pool.query(
+      `SELECT s.*, c.created_by AS category_created_by 
+       FROM subcategories s 
+       JOIN categories c ON s.category_id = c.id
+       WHERE s.id = ?`,
+      [id]
+    );
+    
+    if (subcategories.length === 0) {
+      return res.status(404).json({ message: 'Subcategory not found' });
+    }
+    
+    const subcategory = subcategories[0];
+    
+    // Check if user has permission (admin, subcategory creator, or category creator)
+    if (
+      req.session.user.role !== 'ADMIN' && 
+      subcategory.created_by !== userId &&
+      subcategory.category_created_by !== userId
+    ) {
+      return res.status(403).json({ message: 'You do not have permission to update this subcategory' });
+    }
+    
+    // Update subcategory
+    await pool.query(
+      'UPDATE subcategories SET name = ? WHERE id = ?',
+      [name, id]
+    );
+    
+    // Log activity
+    await pool.query(
+      'INSERT INTO activities (user_id, action) VALUES (?, ?)',
+      [userId, `Updated subcategory: ${name}`]
+    );
+    
+    // Get updated subcategory
+    const [updatedSubcategories] = await pool.query(
+      'SELECT * FROM subcategories WHERE id = ?',
+      [id]
+    );
+    
+    res.status(200).json(updatedSubcategories[0]);
   } catch (error) {
     next(error);
   }
