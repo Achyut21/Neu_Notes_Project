@@ -1,4 +1,4 @@
-# NeuNotes: Academic Notes Sharing Platform
+# NeuNotes: Academic Notes Sharing Platform(SQL Version)
 
 ## Overview
 
